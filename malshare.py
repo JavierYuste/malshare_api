@@ -7,8 +7,9 @@ import shutil
 import datetime
 from random import uniform
 from time import sleep
+import os
 
-logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', datefmt='%m/%d %I:%M:%S', level=logging.DEBUG)
+logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', datefmt='%m/%d %I:%M:%S', level=logging.INFO)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-k', '--api-key', help='API key', type=str,
@@ -49,7 +50,7 @@ def is_PE(hash):
     try:
         details = get_details(hash)
         if 'F_TYPE' in details:
-            logging.debug("Requested file is of type {}".format(details['F_TYPE']))
+            logging.info("Requested file is of type {}".format(details['F_TYPE']))
             return details['F_TYPE'] == 'PE32'
         else:
             logging.error("Requested file ({}) does not report a type at all!".format(str(hash)))
@@ -64,7 +65,7 @@ def get_limit_api():
         req = requests.get("https://malshare.com/api.php?api_key={}&action=getlimit".format(api_key))
         if req.status_code == 200:
             limits = json.loads(req.content)
-            logging.debug("Remaining calls: {}".format(str(limits['REMAINING'])))
+            logging.info("Remaining calls: {}".format(str(limits['REMAINING'])))
             return limits
         else:
             return None
@@ -94,9 +95,15 @@ def get_next_date(date):
     logging.debug("Returning date {}".format(date_res))
     return date_res
 
+def exists_hash(directory, sha256):
+    for file in os.listdir(directory):
+        if file == sha256:
+            return True
+    return False
+
 def get_hashes_from_date(date, output=None):
     try:
-        logging.debug("Retrieving hashes from date {}".format(str(date)))
+        logging.info("Retrieving hashes from date {}".format(str(date)))
         req = requests.get("https://malshare.com/daily/{}/malshare_fileList.{}.sha256.txt".format(str(date), str(date)))
         if req.status_code == 200:
             hashes = []
@@ -130,17 +137,26 @@ if __name__ == '__main__':
 
     # TODO: check error on date
     date = args.first_date
+    with open('last', 'w') as f:
+        f.write(str(date))
     limit = int(get_limit_api()['REMAINING'])
     while limit is not None and limit > 2 and date is not None:
         limit = limit - 1
         hashes = get_hashes_from_date(date)
         for hash_ in hashes:
-            if limit < 3:
-                break
-            sleep(uniform(0, 1.5))
-            limit = limit - 1
-            if limit > 1 and is_PE(hash_[2:-1]):
+            if not exists_hash(args.output_folder, hash_):
+                if limit < 3:
+                    sleep(60*60*24)
+                    limit = int(get_limit_api()['REMAINING'])
+                sleep(uniform(0, 1.5))
                 limit = limit - 1
-                get_sample(hash_[2:-1])
+                if limit > 1 and is_PE(hash_[2:-1]):
+                    limit = limit - 1
+                    get_sample(hash_[2:-1])
+            else:
+                logging.info("Hash already obtained!")
         date = get_next_date(date)
+        with open('last', 'w') as f:
+            f.write(str(date))
         limit = int(get_limit_api()['REMAINING'])
+    logging.info("Exiting...")
