@@ -146,6 +146,7 @@ if __name__ == '__main__':
         for hash_ in hashes:
             if not exists_hash(args.output_folder, hash_):
                 if limit < 3:
+                    logging.info("Sleeping 24 hours... zzz")
                     sleep(60*60*24)
                     limit = int(get_limit_api()['REMAINING'])
                 sleep(uniform(0, 1.5))
