@@ -144,6 +144,7 @@ if __name__ == '__main__':
         limit = limit - 1
         hashes = get_hashes_from_date(date)
         for hash_ in hashes:
+            logging.info("Remaining API calls -> {}".format(str(limit)))
             if not exists_hash(args.output_folder, hash_):
                 if limit < 3:
                     logging.info("Sleeping 24 hours... zzz")
