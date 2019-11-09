@@ -132,9 +132,15 @@ if __name__ == '__main__':
     date = args.first_date
     limit = int(get_limit_api()['REMAINING'])
     while limit is not None and limit > 2 and date is not None:
+        limit = limit - 1
         hashes = get_hashes_from_date(date)
         for hash_ in hashes:
+            if limit < 3:
+                break
             sleep(uniform(0, 1.5))
-            if is_PE(hash_[2:-1]):
+            limit = limit - 1
+            if limit > 1 and is_PE(hash_[2:-1]):
+                limit = limit - 1
                 get_sample(hash_[2:-1])
         date = get_next_date(date)
+        limit = int(get_limit_api()['REMAINING'])
