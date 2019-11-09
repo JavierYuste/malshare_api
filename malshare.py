@@ -9,7 +9,8 @@ from random import uniform
 from time import sleep
 import os
 
-logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', datefmt='%m/%d %I:%M:%S', level=logging.INFO)
+logging.basicConfig(format='%(asctime)s [%(levelname)s]: %(message)s', datefmt='%m/%d %I:%M:%S', level=logging.INFO,
+                    filename='logs.log')
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-k', '--api-key', help='API key', type=str,
